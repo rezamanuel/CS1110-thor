@@ -271,6 +271,93 @@ def controls(keys):
         power_hud_fill.color = 'black'
     if power > 0:
         None
+        
+enemies = {}
+Player_HP = 100
+Player_HP_bar = gamebox.from_color(CAMERA_WIDTH-200, 100, "black", 200, 10)
+Player_HP_bar.right = CAMERA_WIDTH
+enemy_counter = 1
+health_bars = []
+counter = 0
+def generate_enemy():
+    """
+    Makes an enemy at a random location
+    enemies are blue squares as a placeholder (will change later)
+    Will change later so enemies cant spawn in lava
+    might add health bars if i can figure that out
+
+    """
+    global enemy_counter
+    global health_bars
+    enemy_name = "enemy " + str(enemy_counter)
+    enemies[enemy_name] = [gamebox.from_color(random.randint(0, 800), random.randint(0, 600), "blue", 20, 20), 100]
+    enemy_counter += 1
+
+
+def enemy_chase():
+    """Makes enemies chase the player"""
+    enemy_speed = 2
+    for enemy in enemies.values():
+        if type(enemy) != str:
+            if player.x > enemy[0].x:
+                enemy[0].x += enemy_speed
+            if player.x < enemy[0].x:
+                enemy[0].x -= enemy_speed
+            if player.y > enemy[0].y:
+                enemy[0].y += enemy_speed
+            if player.y < enemy[0].y:
+                enemy[0].y -= enemy_speed
+
+
+def enemy_death():
+    """
+    Not possible to delete values in a for loop so enemy gameboxes are changed to just be the string "Dead" when dead
+    """
+    for enemy in enemies:
+        if type(enemies[enemy]) != str:
+            if enemies[enemy][1] <= 0:
+                enemies[enemy] = "Dead"
+
+
+def damage():
+    global Player_HP
+    """
+
+    This will need a lot of changing in the future
+    Made enemies take damage when they touch the hammer to test how lava will work
+    Still have to add in Player health/damage
+    Damage might have to be the last thing I add (need code for hammer throws and stuff like that first
+
+    """
+    for enemy in enemies.values():
+        if type(enemy) != str:
+            if hammer.touches(enemy[0]):
+                enemy[1] -= 10
+            if enemy[0].touches(player):
+                Player_HP -= 1
+    if hammer.touches(player):
+        Player_HP -= 3
+
+
+Player_HP_bar_fill = gamebox.from_color(CAMERA_WIDTH-200, 100, "purple", Player_HP * 1.99, 8)
+Player_HP_bar_fill.right = CAMERA_WIDTH
+
+
+def fix_overlap():
+    """ enemies cannot walk inside of each other """
+    for enemy in enemies.values():
+        if type(enemy) != str:
+            for villain in enemies.values():
+                if type(villain) != str:
+                    if enemy[0].touches(villain[0]):
+                        villain[0].move_both_to_stop_overlapping(enemy[0])
+
+
+def lose_health():
+    global Player_HP_bar_fill
+    Player_HP_bar_fill = gamebox.from_color(CAMERA_WIDTH-200, 100, "purple", Player_HP * 1.99, 8)
+    Player_HP_bar_fill.left = Player_HP_bar.left + 1
+ 
 
 def tick(keys):
 
@@ -289,6 +376,28 @@ def tick(keys):
     hammer_mechanics(keys)
     camera.draw(player)
     # camera.x -= 1.33
+        if counter == 0:
+        for i in range(5):
+            generate_enemy()
+    counter += 1
+    enemy_chase()
+    damage()
+    enemy_death()
+    lose_health()
+    for enemy in enemies.values():
+        if type(enemy) != str:
+            camera.draw(enemy[0])
+    fix_overlap()
+    for item in health_bars:
+        camera.draw(item)
+    walk_controls(keys)
+    if Player_HP > 0:
+        camera.draw(player)
+        print(Player_HP)
+    else:
+        print('YOU LOSE')
+    camera.draw(Player_HP_bar)
+    camera.draw(Player_HP_bar_fill)
     camera.display()    # draw the buffer to the window
 
 TICKS_PER_SECOND = 60
